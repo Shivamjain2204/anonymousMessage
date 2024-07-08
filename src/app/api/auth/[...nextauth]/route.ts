@@ -12,8 +12,8 @@ export const authOptions: NextAuthOptions = {
             credentials: {
                 email: { label: "Email", type: "text" },
                 password: { label: "Password", type: "password" }
-              },
-              async authorize(credentials: any): Promise<any>{
+            },
+            async authorize(credentials: any): Promise<any>{
                 await dbConnect()
                 try {
                     const user = await UserModel.findOne({
@@ -22,10 +22,27 @@ export const authOptions: NextAuthOptions = {
                             {username: credentials.identifier},
                         ]
                     })
+                    if (!user){
+                        throw new Error('No user found with this email')
+                    }
+
+                    if (!user.isVerified){
+                        throw new Error('Please verify your account before login')
+                    }
+
+                    const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password)
+                    if (isPasswordCorrect){
+                        return user
+                    } else {
+                        throw new Error('Incorrect Password')
+                    }
+
+
+
                 } catch (error: any) {
                     throw new Error(error)
                 }
-              }
+            }
         })
     ]
 }
